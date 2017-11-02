@@ -1,5 +1,9 @@
 package com.ludi.uploadPic;
 
+/**
+ * Created by dell on 2017/10/25.
+ */
+
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
@@ -19,15 +23,13 @@ public class UploadMECsimple extends AppCompatActivity {
     long start;
     long time;
 
-    public String uploadPic (final File file){
-        Log.i("tag","jinlai");
+    public String uploadPic (final File file, final String host, final int port){
         start = System.currentTimeMillis();
 
         Thread myThread = new Thread(new Runnable(){
             public void run(){
                 try{
-//                    Socket socket = new Socket("10.108.116.181",8802);
-                    Socket socket = new Socket("10.108.117.14",8886);
+                    Socket socket = new Socket(host,port);
                     Log.i("socket","connect");
                     DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
                     DataInputStream inputStream = new DataInputStream(socket.getInputStream());
@@ -36,10 +38,6 @@ public class UploadMECsimple extends AppCompatActivity {
                     long size = file.length();
                     String s = String.valueOf(size);
 
-//                    String[] fileEnd = file.getName().split("\\.");
-//                    outputStream.writeUTF("--" + fileEnd[fileEnd.length - 1].toString());
-//                    System.out.println("buffer------------------" + "--"
-//                           + fileEnd[fileEnd.length - 1].toString());
                     int bufferSize = 1024*1024;
                     byte[] buffer = new byte[bufferSize];
                     int length = 0;
@@ -53,11 +51,8 @@ public class UploadMECsimple extends AppCompatActivity {
                     socket.shutdownOutput();
                     fileInputStream.close();
 
- //                   Byte a = inputStream.readByte();
                     String a = inputStream.readLine();
-                    // finputStream.readUTF();
                     msg = a;
-                    //msg = a.toString();
                     end = System.currentTimeMillis();
                     time = end-start;
 

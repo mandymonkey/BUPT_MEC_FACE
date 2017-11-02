@@ -15,26 +15,20 @@ import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.opencv.android.OpenCVLoader;
-
 import java.io.File;
-
-;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private static final int REQUEST_PICK_IMAGE = 1; //相册选取
     private static final int REQUEST_CAPTURE = 2;  //拍照
-    //private static final int REQUEST_PICTURE_CUT = 3;  //剪裁图片
     private static final int REQUEST_PERMISSION = 4;  //权限请求
     private ImageView iv;
-    private Button take_btn, album_btn,simpleUpload,glspUpload,upload,cloudUpload,cloudPUpload,trans,signup;
+    private Button take_btn, album_btn,simpleUpload;
     private PermissionsChecker mPermissionsChecker; // 权限检测器
     static final String[] PERMISSIONS = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
             Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -45,66 +39,36 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private File file;
 
     private final Handler mHandler = new Handler();
-    private TextView textViewsimple,textViewglsp,textView,textViewcloud,textViewCloudP,textresult;
+    private TextView textViewsimple;
 
     private String result;
-    private EditText editText;
-    String name = "";
+    private String host,port;
+    private EditText mPortView,mHostView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        initLoadOpenCVLibs();
         initViews();
         initListener();
         init();
     }
 
-    private String TAG = "CV";
-    private void initLoadOpenCVLibs() {
-        Boolean success = OpenCVLoader.initDebug();
-        if(success){
-            Log.i(TAG,"load CVlibs successfully");
-            //trans.setText("click");
-        }
-    }
 
     private void initViews() {
         take_btn = (Button) findViewById(R.id.take_btn);
         album_btn = (Button) findViewById(R.id.album_btn);
-        //trans = (Button)findViewById(R.id.trans);
-
         simpleUpload = (Button)findViewById(R.id.simpleUpload);
-        glspUpload = (Button)findViewById(R.id.glspUpload);
-        //upload = (Button)findViewById(R.id.upload);
-        //cloudPUpload = (Button)findViewById(R.id.uploadcloudP);
-        //cloudUpload = (Button)findViewById(R.id.uploadcloud);
-        signup = (Button)findViewById(R.id.signup);
-
-        editText = (EditText)findViewById(R.id.name);
-
         iv = (ImageView) findViewById(R.id.iv);
-
         textViewsimple = (TextView)findViewById(R.id.textViewsimple);
-        textViewglsp = (TextView)findViewById(R.id.textViewglsp);
-        //textView = (TextView)findViewById(R.id.textView);
-        //textViewcloud = (TextView)findViewById(R.id.textViewcloud);
-        //textViewCloudP = (TextView)findViewById(R.id.textViewcloudP);
-        textresult = (TextView)findViewById(R.id.textresult);
-
+        mHostView = (EditText)findViewById(R.id.host);
+        mPortView = (EditText)findViewById(R.id.port);
     }
 
     private void initListener() {
         take_btn.setOnClickListener(this);
         album_btn.setOnClickListener(this);
         simpleUpload.setOnClickListener(this);
-        glspUpload.setOnClickListener(this);
-        //upload.setOnClickListener(this);
-        //cloudUpload.setOnClickListener(this);
-        //cloudPUpload.setOnClickListener(this);
-        signup.setOnClickListener(this);
-        //trans.setOnClickListener(this);
     }
 
     private void init() {
@@ -140,73 +104,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 isClickCamera = false;
                 break;
             case R.id.simpleUpload:
+                String host = mHostView.getText().toString();
+                String port  = mPortView.getText().toString();
                 if(file != null){
                     final UploadMECsimple uploadMECsimple = new UploadMECsimple();
-                    result = uploadMECsimple.uploadPic(file);
+                    result = uploadMECsimple.uploadPic(file,host,Integer.parseInt(port));
                     updateSimple();
                 }
                 break;
-            case R.id.glspUpload:
-                if(file != null){
-                    UploadMECglsp uploadMECglsp = new UploadMECglsp();
-                    result = uploadMECglsp.uploadPic(file);
-                    updateGLSP();
-                }
-                break;
-//            case R.id.upload:
-//                if(file != null){
-//                    UploadmyScheme uploadmyScheme = new UploadmyScheme();
-//                    result = uploadmyScheme.uploadPic(file);
-//                    updateMY();
-//                    break;
-//                }
-//            case R.id.uploadcloud:
-//                if(file != null){
-//                    UploadMCCSimple uploadMCCSimple = new UploadMCCSimple();
-//                    result = uploadMCCSimple.uploadPic(file);
-//                    updateMCCsimple();
-//                    break;
-//                }
-//            case R.id.uploadcloudP:
-//                if(file != null){
-//                    UploadMCCglsp uploadMCCglsp = new UploadMCCglsp();
-//                    result = uploadMCCglsp.uploadPic(file);
-//                    updateMCCglsp();
-//                    break;
-//                }
-            case R.id.signup:
-                if(file != null && editText != null){
-                    name = editText.getText().toString();
-                    UploadInfo uploadInfo = new UploadInfo();
-                    result = uploadInfo.uploadPic(file,name);
-                    updateInfo();
-                    break;
-                }
-
-//            case R.id.trans:
-//                iv.setDrawingCacheEnabled(true);
-//                Bitmap bitmap = Bitmap.createBitmap(iv.getDrawingCache());
-//
-//                Mat src = new Mat();
-//                Mat gray = new Mat();
-//                Utils.bitmapToMat(bitmap,src);
-//
-//                CascadeClassifier mJavaDetector = new CascadeClassifier("/storage/FaceDetect/haarcascade_frontalface_alt2.xml");
-//                MatOfRect faceDetections = new MatOfRect();
-//                mJavaDetector.detectMultiScale(src,faceDetections);
-//                System.out.println(String.format("Detected %s faces", faceDetections.toArray().length));
-//                for (Rect rect : faceDetections.toArray()) {
-//                    Imgproc.rectangle(src, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 255, 0));
-//                    Mat mat = src.submat(rect);
-//                    Mat face = new Mat();
-//                    Size size = new Size(100,100);
-//                    Imgproc.resize(mat,face,size);
-//                    Imgproc.cvtColor(face,gray,Imgproc.COLOR_BGRA2GRAY);
-//                    Utils.matToBitmap(gray,bitmap);
-//                }
-
-                //iv.setImageBitmap(bitmap);
-                //iv.setDrawingCacheEnabled(false);
         }
     }
 
@@ -219,59 +124,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
     }
 
-    private void updateGLSP(){
-        mHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                textViewglsp.setText(result);
-            }
-        });
-    }
-
-//    private void updateMY(){
-//        mHandler.post(new Runnable() {
-//            @Override
-//            public void run() {
-//                textView.setText(result);
-//            }
-//        });
-//    }
-//
-//    private void updateMCCsimple(){
-//        mHandler.post(new Runnable() {
-//            @Override
-//            public void run() {
-//                textViewcloud.setText(result);
-//            }
-//        });
-//    }
-//
-//    private void updateMCCglsp(){
-//        mHandler.post(new Runnable() {
-//            @Override
-//            public void run() {
-//                textViewCloudP.setText(result);
-//            }
-//        });
-//    }
-//
-    private void updateInfo(){
-        mHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                textresult.setText(result);
-            }
-        });
-    }
-
-
     /**
      * 打开系统相机
      */
     private void openCamera() {
         File file = new FileStorage().createIconFile();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            imageUri = FileProvider.getUriForFile(MainActivity.this, "com.bugull.cameratakedemo.fileprovider", file);//通过FileProvider创建一个content类型的Uri
+            imageUri = FileProvider.getUriForFile(MainActivity.this, "ludi.bupt.edu.facerecdocker.fileprovider", file);//通过FileProvider创建一个content类型的Uri
         } else {
             imageUri = Uri.fromFile(file);
         }
@@ -292,28 +151,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*");
         startActivityForResult(intent, REQUEST_PICK_IMAGE);
     }
-
-    /**
-     * 裁剪
-     */
-//private void cropPhoto() {
-//        File file = new FileStorage().createCropFile();
-//        Uri outputUri = Uri.fromFile(file);//缩略图保存地址
-//        Intent intent = new Intent("com.android.camera.action.CROP");
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-//            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-//        }
-//        intent.setDataAndType(imageUri, "image/*");
-//        intent.putExtra("crop", "true");
-//        intent.putExtra("aspectX", 2);
-//        intent.putExtra("aspectY", 3);
-//        intent.putExtra("scale", true);
-//        intent.putExtra("return-data", false);
-//        intent.putExtra(MediaStore.EXTRA_OUTPUT, outputUri);
-//        intent.putExtra("outputFormat", Bitmap.CompressFormat.JPEG.toString());
-//        intent.putExtra("noFaceDetection", true);
-//        startActivityForResult(intent, REQUEST_PICTURE_CUT);
-//    }
 
     private void startPermissionsActivity() {
         PermissionsActivity.startActivityForResult(this, REQUEST_PERMISSION,
@@ -400,23 +237,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     showPic();
                 }
                 break;
-//            case REQUEST_PICTURE_CUT://裁剪完成
-//                Bitmap bitmap;
-//                try {
-//                    if (isClickCamera) {
-//                        bitmap = BitmapFactory.decodeStream(getContentResolver().openInputStream(imageUri));
-//                        imagePathTake = imageUri.getPath();
-//                        file = new File(String.valueOf(imagePathTake));
-//                    } else {
-//                        bitmap = BitmapFactory.decodeFile(imagePath);
-//                        file = new File(imagePath);
-//                    }
-//                    iv.setImageBitmap(bitmap);
-//
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-//                break;
             case REQUEST_PERMISSION://权限请求
                 if (resultCode == PermissionsActivity.PERMISSIONS_DENIED) {
                     finish();
@@ -431,3 +251,4 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 }
+
