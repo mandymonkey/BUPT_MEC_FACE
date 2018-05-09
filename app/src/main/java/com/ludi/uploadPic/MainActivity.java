@@ -8,8 +8,10 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
@@ -21,14 +23,20 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private static final int REQUEST_PICK_IMAGE = 1; //相册选取
     private static final int REQUEST_CAPTURE = 2;  //拍照
     private static final int REQUEST_PERMISSION = 4;  //权限请求
-    private ImageView iv;
-    private Button take_btn, album_btn,simpleUpload;
+    private ImageView iv, iv_receive;
+    private Button take_btn, album_btn,simpleUpload,automaticUpload;
     private PermissionsChecker mPermissionsChecker; // 权限检测器
     static final String[] PERMISSIONS = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
             Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -39,7 +47,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private File file;
 
     private final Handler mHandler = new Handler();
-    private TextView textViewsimple;
+    private TextView textViewsimple, textIp, textProcess,textReceive;
 
     private String result;
     private String host,port;
@@ -60,15 +68,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         album_btn = (Button) findViewById(R.id.album_btn);
         simpleUpload = (Button)findViewById(R.id.simpleUpload);
         iv = (ImageView) findViewById(R.id.iv);
+        //iv_receive = (ImageView)findViewById(R.id.iv_receive);
         textViewsimple = (TextView)findViewById(R.id.textViewsimple);
+        textIp = (TextView)findViewById(R.id.ip);
+        //textProcess = (TextView)findViewById(R.id.process);
+        //textReceive = (TextView)findViewById(R.id.receive);
         mHostView = (EditText)findViewById(R.id.host);
         mPortView = (EditText)findViewById(R.id.port);
+        //automaticUpload = (Button)findViewById(R.id.automaticUpload);
     }
 
     private void initListener() {
         take_btn.setOnClickListener(this);
         album_btn.setOnClickListener(this);
         simpleUpload.setOnClickListener(this);
+       // automaticUpload.setOnClickListener(this);
     }
 
     private void init() {
@@ -112,6 +126,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     updateSimple();
                 }
                 break;
+/*            case R.id.automaticUpload:
+                ExecutorService exec = Executors.newFixedThreadPool(2); // i为自定义的线程数量。
+                new Upload().executeOnExecutor(exec);
+                new Download().executeOnExecutor(exec);
+                break;*/
         }
     }
 
@@ -122,6 +141,84 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 textViewsimple.setText(result);
             }
         });
+    }
+
+    class Download extends AsyncTask<String, Bitmap, String> {
+        int k = 0;
+
+        protected String doInBackground(String... params) {
+            try{
+                ServerSocket serverSocket = new ServerSocket(10000);
+                while (true){
+                    Socket socket = serverSocket.accept();
+                    DataInputStream is = new DataInputStream(socket.getInputStream());
+                    String fileName = System.currentTimeMillis() + "." + "JPG";
+                    File file = new File("/storage/emulated/0/Download/" + fileName);
+                    FileOutputStream bo = new FileOutputStream(file);
+                    int bytesRead = 0;
+                    byte[] buffer = new byte[1024*1024];
+
+                    while ((bytesRead = is.read(buffer,0,buffer.length)) != -1){
+                        bo.write(buffer,0,bytesRead);
+                    }
+                    bo.flush();
+                    bo.close();
+                    Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+                    k++;
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    publishProgress(bitmap);
+                }
+            }catch(IOException e){
+                e.printStackTrace();
+            }
+
+            return "over";
+        }
+
+        protected void onProgressUpdate(Bitmap... bitmap) {
+
+            iv_receive.setImageBitmap(bitmap[0]);
+            textReceive.setText("Receive: " + k);
+        }
+    }
+    class Upload extends AsyncTask<String, Bitmap, String>{
+        UploadAll uploadAll;
+
+        protected String doInBackground(String... params)
+        {
+
+                    uploadAll = new UploadAll();
+                    String ipath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath();
+                    ArrayList<String> imagePath = uploadAll.refreshFileList(ipath);
+
+                    for(String path : imagePath) {
+                        uploadAll.uploadAllImage(path);
+                        try {
+                            Thread.sleep(3000);
+                        } catch (InterruptedException e) {
+
+                        }
+
+                        Bitmap bitmap = BitmapFactory.decodeFile(path);
+                        publishProgress(bitmap);
+                    }
+
+            return  "over";
+        }
+
+
+
+        protected void onProgressUpdate(Bitmap... bitmap)
+        {
+                textIp.setText("Current IP: " + uploadAll.ip);
+                iv.setImageBitmap(bitmap[0]);
+                textProcess.setText("Upload: " + uploadAll.i + "/" + uploadAll.imagePath.size());
+        }
+
     }
 
     /**

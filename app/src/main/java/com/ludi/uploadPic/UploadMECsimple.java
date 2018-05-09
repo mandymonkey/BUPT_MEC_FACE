@@ -36,12 +36,12 @@ public class UploadMECsimple extends AppCompatActivity {
 
                     FileInputStream fileInputStream = new FileInputStream(file);
                     long size = file.length();
-                    String s = String.valueOf(size);
+                    //String s = String.valueOf(size);
 
                     int bufferSize = 1024*1024;
                     byte[] buffer = new byte[bufferSize];
                     int length = 0;
-                    outputStream.write((s.getBytes()));
+                    //outputStream.write((s.getBytes()));
                     while ((length = fileInputStream.read(buffer)) != -1) {
                         outputStream.write(buffer, 0, length);
                         outputStream.flush();
